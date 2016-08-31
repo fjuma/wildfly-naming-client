@@ -327,7 +327,7 @@ public abstract class AbstractContext implements Context, AutoCloseable {
         return getNativeNameParser();
     }
 
-    Name decomposeName(CompositeName compositeName) throws NamingException {
+    protected Name decomposeName(CompositeName compositeName) throws NamingException {
         if (compositeName.isEmpty()) {
             return new SimpleName();
         }
