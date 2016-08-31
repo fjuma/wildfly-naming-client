@@ -24,6 +24,7 @@ package org.wildfly.naming.client.util;
 
 import static org.wildfly.naming.client._private.Messages.log;
 
+import java.io.IOException;
 import java.util.Hashtable;
 
 import javax.naming.Binding;
@@ -131,5 +132,20 @@ public final class NamingUtils {
         } catch (Throwable t) {
             log.contextCloseFailed(context, t);
         }
+    }
+
+    /**
+     * Create a naming exception with a root cause.
+     *
+     * @param message the message
+     * @param cause the cause, or {@code null} for none
+     * @return the naming exception
+     */
+    public static NamingException namingException(final String message, final Throwable cause) {
+        final NamingException namingException = new NamingException(message);
+        if (cause != null) {
+            namingException.setRootCause(cause);
+        }
+        return namingException;
     }
 }

@@ -22,6 +22,7 @@
 
 package org.wildfly.naming.client.remote;
 
+import static org.wildfly.naming.client.util.NamingUtils.namingException;
 import static org.xnio.IoUtils.safeClose;
 
 import java.io.IOException;
@@ -164,9 +165,9 @@ final class RemoteClientTransport {
 
             public void handleMessage(final Channel channel, final MessageInputStream message) {
                 try (MessageInputStream mis = message) {
+                    final int messageId = mis.readUnsignedByte();
                     final int id = readId(mis);
-                    final int result = mis.readUnsignedByte();
-                    tracker.signalResponse(id, result, mis, true);
+                    tracker.signalResponse(id, messageId, mis, true);
                     channel.receiveMessage(this);
                 } catch (IOException e) {
                     safeClose(channel);
@@ -205,13 +206,28 @@ final class RemoteClientTransport {
             }
             final BlockingInvocation.Response response = invocation.getResponse();
             try (MessageInputStream is = response.getInputStream()) {
-                if (is.readUnsignedByte() == Protocol.P_CONTEXT) {
-                    return new RelativeFederatingContext(new FastHashtable<>(context.getEnvironment()), context, NamingUtils.toCompositeName(name));
-                } else if (is.readUnsignedByte() != Protocol.P_OBJECT) {
-                    throw Messages.log.invalidResponse();
-                }
-                try (Unmarshaller unmarshaller = createUnmarshaller(is)) {
-                    return unmarshaller.readObject();
+                final int result = is.readUnsignedByte();
+                if (result == Protocol.SUCCESS) {
+                    final int parameterType = is.readUnsignedByte();
+                    if (parameterType == Protocol.P_CONTEXT) {
+                        return new RelativeFederatingContext(new FastHashtable<>(context.getEnvironment()), context, NamingUtils.toCompositeName(name));
+                    } else if (parameterType != Protocol.P_OBJECT) {
+                        throw Messages.log.invalidResponse();
+                    }
+                    try (Unmarshaller unmarshaller = createUnmarshaller(is)) {
+                        return unmarshaller.readObject();
+                    }
+                } else if (result == Protocol.FAILURE) {
+                    final int parameterType = is.readUnsignedByte();
+                    if (parameterType != Protocol.P_EXCEPTION) {
+                        throw Messages.log.unexpectedResponseParameter();
+                    }
+                    try (Unmarshaller unmarshaller = createUnmarshaller(is)) {
+                        final Exception exception = unmarshaller.readObject(Exception.class);
+                        throw namingException("Failed to lookup", exception);
+                    }
+                } else {
+                    throw Messages.log.outcomeNotUnderstood();
                 }
             }
         } catch (ClassNotFoundException | IOException e) {
