@@ -62,6 +62,23 @@ public final class NamingUtils {
         }
     }
 
+    /**
+     * Create a CompositeName where each name segment is equal to the name segment in the source name.
+     *
+     * @param name the source name
+     * @return a {@link CompositeName} where each name segment is equal to the name segment in the source name
+     * @throws InvalidNameException if an error occurs while converting the source name to a {@link CompositeName}
+     */
+    public static CompositeName toDecomposedCompositeName(final Name name) throws InvalidNameException {
+        if (name instanceof CompositeName) {
+            return (CompositeName) name;
+        } else {
+            final CompositeName compositeName = new CompositeName();
+            compositeName.addAll(new CompositeName(name.toString()));
+            return compositeName;
+        }
+    }
+
     public static Context emptyContext(final Hashtable<String, Object> environment) {
         return new AbstractContext(FastHashtable.of(environment)) {
             protected Object lookupNative(final Name name) throws NamingException {
