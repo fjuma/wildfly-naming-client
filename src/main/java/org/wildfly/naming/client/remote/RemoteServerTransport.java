@@ -361,12 +361,16 @@ final class RemoteServerTransport {
                 }
             } else {
                 mos.writeInt(resultList.size());
-                try (Marshaller marshaller = createMarshaller(mos, configuration)) {
+                for (NameClassPair nameClassPair : resultList) {
+                    mos.writeUTF(nameClassPair.getName());
+                    mos.writeUTF(nameClassPair.getClassName());
+                }
+                /*try (Marshaller marshaller = createMarshaller(mos, configuration)) {
                     for (NameClassPair nameClassPair : resultList) {
                         marshaller.writeUTF(nameClassPair.getName());
                         marshaller.writeUTF(nameClassPair.getClassName());
                     }
-                }
+                }*/
             }
         }
     }
