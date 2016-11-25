@@ -209,7 +209,7 @@ final class RemoteClientTransport {
                 if (version == 1) {
                     try (Marshaller marshaller = createMarshaller(messageOutputStream)) {
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(name));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(name));
                     }
                 } else {
                     messageOutputStream.writeInt(authId);
@@ -262,7 +262,7 @@ final class RemoteClientTransport {
                 if (version == 1) {
                     try (Marshaller marshaller = createMarshaller(messageOutputStream)) {
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(name));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(name));
                         marshaller.writeByte(Protocol.P_OBJECT);
                         marshaller.writeObject(obj);
                     }
@@ -300,7 +300,7 @@ final class RemoteClientTransport {
                 if (version == 1) {
                     try (Marshaller marshaller = createMarshaller(messageOutputStream)) {
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(name));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(name));
                     }
                 } else {
                     messageOutputStream.writeInt(authId);
@@ -332,9 +332,9 @@ final class RemoteClientTransport {
                 if (version == 1) {
                     try (Marshaller marshaller = createMarshaller(messageOutputStream)) {
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(oldName));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(oldName));
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(newName));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(newName));
                     }
                 } else {
                     messageOutputStream.writeInt(authId);
@@ -368,7 +368,7 @@ final class RemoteClientTransport {
                 if (version == 1) {
                     try (Marshaller marshaller = createMarshaller(messageOutputStream)) {
                         marshaller.writeByte(Protocol.P_NAME);
-                        marshaller.writeObject(NamingUtils.toCompositeName(name));
+                        marshaller.writeObject(NamingUtils.toDecomposedCompositeName(name));
                     }
                 } else {
                     messageOutputStream.writeInt(authId);
@@ -426,7 +426,7 @@ final class RemoteClientTransport {
         if (version == 1 && authId != 0) {
             throw Messages.log.connectionSharingUnsupported();
         }
-        final CompositeName compositeName = NamingUtils.toCompositeName(name);
+        final CompositeName compositeName = NamingUtils.toDecomposedCompositeName(name);
         try {
             try (MessageOutputStream messageOutputStream = tracker.allocateMessage(invocation)) {
                 // bind
@@ -487,7 +487,7 @@ final class RemoteClientTransport {
             throw Messages.log.connectionSharingUnsupported();
         }
         final BlockingInvocation invocation = tracker.addInvocation(BlockingInvocation::new);
-        final CompositeName compositeName = NamingUtils.toCompositeName(name);
+        final CompositeName compositeName = NamingUtils.toDecomposedCompositeName(name);
         try {
             try (MessageOutputStream messageOutputStream = tracker.allocateMessage(invocation)) {
                 // bind
