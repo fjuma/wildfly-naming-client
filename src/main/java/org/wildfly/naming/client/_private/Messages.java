@@ -22,6 +22,9 @@
 
 package org.wildfly.naming.client._private;
 
+import static org.jboss.logging.Logger.Level.ERROR;
+import static org.jboss.logging.Logger.Level.WARN;
+
 import java.io.IOException;
 import java.util.ServiceConfigurationError;
 
@@ -156,4 +159,34 @@ public interface Messages extends BasicLogger {
 
     @Message(id = 31, value = "Outcome not understood")
     IOException outcomeNotUnderstood();
+
+    @LogMessage(level = ERROR)
+    @Message(id = 32, value = "Unexpected parameter type - expected: %d  received: %d")
+    void unexpectedParameterType(int expected, int actual);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 33, value = "Failed to send exception response to client")
+    void failedToSendExceptionResponse(@Cause Throwable cause);
+
+    @LogMessage(level = WARN)
+    @Message(id = 34, value = "Unexpected internal error")
+    void unexpectedError(@Cause Throwable cause);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 35, value = "null correlationId so error not sent to client")
+    void nullCorrelationId(@Cause Throwable cause);
+
+    @Message(id = 36, value = "Unrecognized messageId")
+    IOException unrecognizedMessageId();
+
+    @LogMessage(level = ERROR)
+    @Message(id = 37, value = "Unable to send header, closing channel")
+    void failedToSendHeader(@Cause IOException e);
+
+    @Message(id = 38, value = "Unsupported protocol version [ %d ]")
+    IllegalArgumentException unsupportedProtocolVersion(int version);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 39, value = "Error determining version selected by client")
+    void failedToDetermineClientVersion(@Cause Throwable t);
 }
