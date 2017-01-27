@@ -45,6 +45,7 @@ import org.wildfly.security.auth.client.AuthenticationContextConfigurationClient
 import org.xnio.FinishedIoFuture;
 import org.xnio.FutureResult;
 import org.xnio.IoFuture;
+import org.xnio.OptionMap;
 
 /**
  * A provider for JBoss Remoting-based JNDI contexts.  Any scheme which uses JBoss Remoting using this provider will
@@ -65,7 +66,13 @@ public final class RemoteNamingProvider implements NamingProvider {
         // shared connection
         this.endpoint = endpoint;
         this.providerUri = providerUri;
-        connectionFactory = () -> endpoint.getConnection(providerUri);
+        connectionFactory = () -> {
+                        try {
+                                            return endpoint.connect(providerUri, OptionMap.EMPTY, context);
+                            } catch (Exception e) {
+                                return null;
+                            }};//endpoint.getConnection(providerUri);
+
         closeable = NamingCloseable.NULL;
         authenticationConfiguration = CLIENT.getAuthenticationConfiguration(providerUri, context, -1, "jndi", "jboss", "operate");
     }
