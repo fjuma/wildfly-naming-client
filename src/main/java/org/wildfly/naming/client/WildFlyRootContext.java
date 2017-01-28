@@ -23,11 +23,13 @@
 package org.wildfly.naming.client;
 
 import static java.security.AccessController.doPrivileged;
+import static org.jboss.naming.remote.client.InitialContextFactory.CALLBACK_HANDLER_KEY;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivilegedAction;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
@@ -46,6 +48,7 @@ import org.wildfly.common.Assert;
 import org.wildfly.naming.client._private.Messages;
 import org.wildfly.naming.client.util.FastHashtable;
 import org.wildfly.naming.client.util.NamingUtils;
+import org.xnio.Options;
 
 /**
  * A root context which locates providers based on the {@link Context#PROVIDER_URL} environment property as well as any
@@ -83,13 +86,13 @@ public final class WildFlyRootContext implements Context {
      * @param classLoader the class loader to search for providers
      */
     public WildFlyRootContext(final FastHashtable<String, Object> environment, final ClassLoader classLoader) {
-        this.environment = environment;
+        this.environment = EnvironmentUtil.convertEnvironment(environment);
         namingProviderServiceLoader = ServiceLoader.load(NamingProviderFactory.class, classLoader);
         namingContextServiceLoader = ServiceLoader.load(NamingContextFactory.class, classLoader);
     }
 
     private WildFlyRootContext(final FastHashtable<String, Object> environment, final ServiceLoader<NamingProviderFactory> namingProviderServiceLoader, final ServiceLoader<NamingContextFactory> namingContextServiceLoader) {
-        this.environment = environment;
+        this.environment = EnvironmentUtil.convertEnvironment(environment);
         this.namingProviderServiceLoader = namingProviderServiceLoader;
         this.namingContextServiceLoader = namingContextServiceLoader;
     }
@@ -405,6 +408,69 @@ public final class WildFlyRootContext implements Context {
 
         boolean isEmpty(){
             return urlScheme == null && name.isEmpty();
+        }
+    }
+
+    private static class EnvironmentUtil {
+
+        private static final String REMOTE_CONNECTIONS = "remote.connections";
+        private static final String REMOTE_CONNECTION_PREFIX = "remote.connection.";
+        private static final String HOST = "host";
+        private static final String PORT = "port";
+        private static final String CALLBACK_HANDLER_CLASS = "callback.handler.class";
+        private static final String CONNECT_OPTIONS_PREFIX = "connect.options.";
+        private static final String USERNAME = "username";
+        private static final String PASSWORD = "password";
+        private static final String NAMING_CONNECT_OPTIONS_PREFIX = "jboss.naming.client.connect.options.";
+
+        /**
+         * Converts legacy EJB connection properties from the environment to naming properties, if possible.
+         *
+         * @param environment the environment
+         * @return the environment after replacing EJB connection properties with naming properties where possible
+         */
+        private static FastHashtable<String, Object> convertEnvironment(final FastHashtable<String, Object> environment) {
+            final String connectionName = (String) environment.getOrDefault(REMOTE_CONNECTIONS, "");
+            if (connectionName.isEmpty() || connectionName.contains(",")) {
+                // either no EJB connection was specified or multiple EJB connections were specified, can't convert directly to naming properties
+                return environment;
+            }
+            // only one EJB connection was specified, convert its properties to corresponding naming properties
+            final FastHashtable<String, Object> convertedEnvironment = new FastHashtable<>(environment.size());
+            final String ejbPrefix = REMOTE_CONNECTION_PREFIX + connectionName + ".";
+            String host = null;
+            String port = null;
+            boolean sslEnabled = false;
+            for (Map.Entry<String, Object> entry : environment.entrySet()) {
+                String property = entry.getKey();
+                Object value = entry.getValue();
+                if (property.startsWith(ejbPrefix)) {
+                    if (property.endsWith(HOST)) {
+                        host = (String) value;
+                        continue;
+                    } else if (property.endsWith(PORT)) {
+                        port = (String) value;
+                        continue;
+                    } else if (property.endsWith(CALLBACK_HANDLER_CLASS)) {
+                        property = CALLBACK_HANDLER_KEY;
+                    } else if (property.endsWith(USERNAME)) {
+                        property = SECURITY_PRINCIPAL;
+                    } else if (property.endsWith(PASSWORD)) {
+                        property = SECURITY_CREDENTIALS;
+                    } else if (property.contains(CONNECT_OPTIONS_PREFIX)) {
+                        property = property.replace(ejbPrefix + CONNECT_OPTIONS_PREFIX, NAMING_CONNECT_OPTIONS_PREFIX);
+                    } else if (property.endsWith(Options.SSL_ENABLED.getName())) {
+                        sslEnabled = value == null ? false : Boolean.parseBoolean((String) value);
+                        continue;
+                    }
+                }
+                convertedEnvironment.put(property, value);
+            }
+            if ((host != null) && (port != null)) {
+                final String providerUrl = sslEnabled ? "remote+https://" + host + ":" + port : "remote+http://" + host + ":" + port;
+                convertedEnvironment.put(PROVIDER_URL, providerUrl);
+            }
+            return convertedEnvironment;
         }
     }
 }
