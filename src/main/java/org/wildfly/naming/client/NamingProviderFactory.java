@@ -32,9 +32,10 @@ import org.wildfly.naming.client.util.FastHashtable;
 /**
  * A provider supported by the unified WildFly Naming dispatcher.
  *
+ * @param <T> the naming provider type
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public interface NamingProviderFactory {
+public interface NamingProviderFactory<T extends NamingProvider> {
     /**
      * Determine if this provider supports the given {@code PROVIDER_URL} scheme.
      *
@@ -47,10 +48,10 @@ public interface NamingProviderFactory {
     /**
      * Create the naming provider instance for a provider URI.
      *
-     * @param providerUri the URI from the {@link Context#PROVIDER_URL} environment property, or {@code null} if none was given
      * @param env a copy of the environment which may be consumed directly by the provider (not {@code null})
+     * @param providerUris the URIs from the {@link Context#PROVIDER_URL} environment property, or {@code null} if none were given
      * @return the root context (must not be {@code null})
      * @throws NamingException if the root context creation failed for some reason
      */
-    NamingProvider createProvider(URI providerUri, FastHashtable<String, Object> env) throws NamingException;
+    T createProvider(FastHashtable<String, Object> env, URI... providerUris) throws NamingException;
 }
